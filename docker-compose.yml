@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sas_legal_db
+    environment:
+      POSTGRES_USER: rukioi
+      POSTGRES_PASSWORD: Daniel07
+      POSTGRES_DB: sas_legal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sas_network
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sas_legal_api
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://rukioi:Daniel07@postgres:5432/sas_legal
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key}
+      ADMIN_KEY: ${ADMIN_KEY:-your_admin_secret_key}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - sas_network
+
+networks:
+  sas_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

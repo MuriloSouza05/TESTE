@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String    @id @default(uuid())
+  companyName String
+  cnpj        String    @unique
+  planType    PlanType
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       User[]
+  clients     Client[]
+  projects    Project[]
+  tasks       Task[]
+  invoices    Invoice[]
+  transactions Transaction[]
+  auditLogs   AuditLog[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  accountType  AccountType
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId     String
+
+  projects     Project[]
+  tasks        Task[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Client {
+  id           String   @id @default(uuid())
+  name         String
+  cpf          String?
+  rg           String?
+  pis          String?
+  cei          String?
+  inssStatus   String?
+  email        String?
+  phone        String?
+  address      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId     String
+
+  projects     Project[]
+  invoices     Invoice[]
+
+  @@map("clients")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      ProjectStatus
+  startDate   DateTime
+  endDate     DateTime?
+  budget      Float?
+  progress    Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  client      Client    @relation(fields: [clientId], references: [id])
+  clientId    String
+
+  assignedTo  User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  tasks       Task[]
+  invoices    Invoice[]
+
+  @@map("projects")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus
+  priority    Priority
+  estimatedHours Float?
+  actualHours Float?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  project     Project   @relation(fields: [projectId], references: [id])
+  projectId   String
+
+  assignedTo  User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@map("tasks")
+}
+
+model Invoice {
+  id          String    @id @default(uuid())
+  number      String    @unique
+  status      InvoiceStatus
+  amount      Float
+  dueDate     DateTime
+  paidAt      DateTime?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  client      Client    @relation(fields: [clientId], references: [id])
+  clientId    String
+
+  project     Project   @relation(fields: [projectId], references: [id])
+  projectId   String
+
+  @@map("invoices")
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  type        TransactionType
+  amount      Float
+  category    String
+  description String?
+  date        DateTime
+  isRecurring Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  @@map("transactions")
+}
+
+model AuditLog {
+  id           String    @id @default(uuid())
+  action       String
+  resourceType String
+  resourceId   String
+  details      Json?
+  createdAt    DateTime  @default(now())
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId     String
+
+  user         User      @relation(fields: [userId], references: [id])
+  userId       String
+
+  @@map("audit_logs")
+}
+
+enum PlanType {
+  SIMPLE
+  COMPOSITE
+  MANAGERIAL
+}
+
+enum AccountType {
+  SIMPLE
+  COMPOSITE
+  MANAGERIAL
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  PAUSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}

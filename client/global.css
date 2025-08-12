@@ -1,0 +1,249 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animações personalizadas para navegação suave */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes smoothFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes smoothSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Classes utilitárias para transições suaves */
+.smooth-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.smooth-scale:active {
+  transform: scale(0.98);
+}
+
+/* Melhorar transições de foco */
+.focus\\:smooth-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  transition: box-shadow 0.2s ease;
+}
+
+@layer base {
+  /**
+   * Law Office SaaS Theme Variables
+   * Professional color scheme optimized for legal professionals
+   */
+  :root {
+    /* Global brand colors */
+    --primary-blue: 217.2 91.2% 59.8%;     /* #3B82F6 */
+    --success-green: 142.1 76.2% 36.3%;    /* #10B981 */
+    --warning-yellow: 45.4 93.4% 47.5%;    /* #F59E0B */
+    --error-red: 0 84.2% 60.2%;            /* #EF4444 */
+
+    /* Typography */
+    --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-size-base: 16px;
+    --font-weight-normal: 400;
+    --font-weight-bold: 600;
+
+    /* Base theme colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: var(--primary-blue);
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: var(--error-red);
+    --destructive-foreground: 0 0% 98%;
+
+    --success: var(--success-green);
+    --success-foreground: 0 0% 98%;
+
+    --warning: var(--warning-yellow);
+    --warning-foreground: 222.2 84% 4.9%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: var(--primary-blue);
+
+    --radius: 0.5rem;
+
+    /* Sidebar theme */
+    --sidebar-background: 222.2 47.4% 11.2%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: var(--primary-blue);
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 222.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 222.2 32.6% 17.5%;
+    --sidebar-ring: var(--primary-blue);
+
+    /* Financial metrics colors */
+    --revenue-color: var(--success-green);
+    --expense-color: var(--error-red);
+    --balance-positive: var(--success-green);
+    --balance-negative: var(--error-red);
+    --client-color: var(--primary-blue);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: var(--primary-blue);
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: var(--error-red);
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: var(--primary-blue);
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: var(--primary-blue);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: var(--primary-blue);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  /* Revenue/Income styling */
+  .metric-revenue {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  /* Expense styling */
+  .metric-expense {
+    @apply text-red-600 dark:text-red-400;
+  }
+
+  /* Balance styling - positive */
+  .metric-balance-positive {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  /* Balance styling - negative */
+  .metric-balance-negative {
+    @apply text-red-600 dark:text-red-400;
+  }
+
+  /* Client count styling */
+  .metric-clients {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+
+  /* Sidebar base styling */
+  .sidebar-nav {
+    @apply flex flex-col h-full bg-sidebar border-r border-sidebar-border;
+  }
+
+  /* Status indicators for projects */
+  .status-novo {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+  }
+
+  .status-analise {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+  }
+
+  .status-andamento {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+
+  .status-aguardando {
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200;
+  }
+
+  .status-revisao {
+    @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200;
+  }
+
+  .status-concluido {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+
+  .status-cancelado {
+    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  }
+
+  .status-arquivado {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+  }
+}
