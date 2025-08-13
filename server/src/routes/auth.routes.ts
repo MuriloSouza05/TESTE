@@ -154,4 +154,14 @@ router.post('/register', asyncHandler(async (req, res) => {
   });
 }));
 
+// Rota de logout
+router.post('/logout', asyncHandler(async (req, res) => {
+  // Em um sistema com blacklist de tokens, você adicionaria o token à blacklist aqui
+  // Para JWT stateless, o logout é feito no frontend removendo o token
+  
+  res.json({
+    message: 'Logout realizado com sucesso'
+  });
+}));
+
 export { router as authRoutes };

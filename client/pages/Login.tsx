@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Scale, Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -71,27 +72,17 @@ export function Login() {
     },
   });
 
+  const { login } = useAuth();
+
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     setErrorMessage('');
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock authentication
-      if (data.email === 'admin@escritorio.com' && data.password === '123456') {
-        setSuccessMessage('Login realizado com sucesso! Redirecionando...');
-        
-        // Simulate redirect to dashboard
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
-      } else {
-        setErrorMessage('Email ou senha incorretos');
-      }
-    } catch (error) {
-      setErrorMessage('Erro ao fazer login. Tente novamente.');
+      await login(data.email, data.password);
+      setSuccessMessage('Login realizado com sucesso! Redirecionando...');
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Erro ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

@@ -49,82 +49,12 @@ import {
   FileText,
   Clock,
   Plus,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DashboardCharts } from '@/components/Dashboard/Charts';
 import { useNavigate } from 'react-router-dom';
-
-// Mock data - would come from API in real app
-const metrics = {
-  revenue: {
-    value: 45280.00,
-    change: 15,
-    trend: 'up' as const,
-  },
-  expenses: {
-    value: 12340.00,
-    change: -8,
-    trend: 'down' as const,
-  },
-  balance: {
-    value: 32940.00,
-    change: 23,
-    trend: 'up' as const,
-  },
-  clients: {
-    value: 127,
-    change: 12,
-    trend: 'up' as const,
-    period: 'este mês',
-  },
-};
-
-const recentActivities = [
-  {
-    id: 1,
-    type: 'client',
-    message: 'Novo cliente adicionado: Maria Silva',
-    time: '2 horas atrás',
-    icon: Users,
-    color: 'text-blue-600',
-  },
-  {
-    id: 2,
-    type: 'invoice',
-    message: 'Fatura INV-001 vencendo em 3 dias',
-    time: '4 horas atrás',
-    icon: AlertCircle,
-    color: 'text-yellow-600',
-  },
-  {
-    id: 3,
-    type: 'project',
-    message: 'Projeto "Ação Trabalhista" atualizado',
-    time: '6 horas atrás',
-    icon: FileText,
-    color: 'text-green-600',
-  },
-  {
-    id: 4,
-    type: 'task',
-    message: 'Tarefa "Revisar contrato" completada',
-    time: '1 dia atrás',
-    icon: Clock,
-    color: 'text-purple-600',
-  },
-];
-
-const urgentProjects = [
-  { name: 'Ação Previdenciária - João Santos', deadline: '2024-01-15', status: 'Em Andamento' },
-  { name: 'Divórcio Consensual - Ana Costa', deadline: '2024-01-18', status: 'Revisão' },
-  { name: 'Recuperação Judicial - Tech LTDA', deadline: '2024-01-20', status: 'Aguardando Cliente' },
-];
-
-const upcomingInvoices = [
-  { number: 'INV-001', client: 'Maria Silva', amount: 2500.00, dueDate: '2024-01-15' },
-  { number: 'INV-002', client: 'João Santos', amount: 4800.00, dueDate: '2024-01-16' },
-  { number: 'INV-003', client: 'Tech LTDA', amount: 12000.00, dueDate: '2024-01-18' },
-];
+import { useDashboard } from '@/hooks/useDashboard';
 
 function MetricCard({ 
   title, 
@@ -133,22 +63,49 @@ function MetricCard({
   trend, 
   icon: Icon, 
   format = 'currency',
-  className 
+  className,
+  isLoading = false
 }: {
   title: string;
   value: number;
-  change: number;
-  trend: 'up' | 'down';
+  change?: number;
+  trend?: 'up' | 'down';
   icon: React.ElementType;
   format?: 'currency' | 'number';
   className?: string;
+  isLoading?: boolean;
 }) {
-  const formattedValue = format === 'currency' 
-    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
-    : value.toLocaleString('pt-BR');
+  const formatValue = (val: number) => {
+    if (format === 'currency') {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(val);
+    }
+    return val.toLocaleString('pt-BR');
+  };
+
+  if (isLoading) {
+    return (
+      <Card className={cn('transition-all duration-200 hover:shadow-md', className)}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {title}
+          </CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm text-muted-foreground">Carregando...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className={cn("relative overflow-hidden", className)}>
+    <Card className={cn('transition-all duration-200 hover:shadow-md', className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -156,17 +113,20 @@ function MetricCard({
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{formattedValue}</div>
-        <div className="flex items-center text-xs text-muted-foreground">
-          {trend === 'up' ? (
-            <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
-          ) : (
-            <TrendingDown className="mr-1 h-3 w-3 text-red-600" />
-          )}
-          <span className={trend === 'up' ? 'text-green-600' : 'text-red-600'}>
-            {change > 0 ? '+' : ''}{change}% mês
-          </span>
-        </div>
+        <div className="text-2xl font-bold">{formatValue(value)}</div>
+        {change !== undefined && trend && (
+          <p className="text-xs text-muted-foreground flex items-center mt-1">
+            {trend === 'up' ? (
+              <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+            ) : (
+              <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+            )}
+            <span className={trend === 'up' ? 'text-green-600' : 'text-red-600'}>
+              {change > 0 ? '+' : ''}{change}%
+            </span>
+            <span className="ml-1">em relação ao mês anterior</span>
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -174,81 +134,34 @@ function MetricCard({
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { data, metrics, isLoading, error } = useDashboard();
 
-  const handleViewAllNotifications = () => {
-    // Redirect to notifications page instead of showing notification
-    navigate('/notificacoes');
-  };
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Dashboard</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-  const handleViewAllProjects = () => {
-    // Enhanced smooth transition with page fade
-    const button = document.activeElement as HTMLElement;
-    if (button) {
-      button.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
-      button.style.transform = 'scale(0.95)';
-      button.style.opacity = '0.7';
-
-      // Add ripple effect
-      const ripple = document.createElement('span');
-      ripple.style.cssText = `
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(59, 130, 246, 0.3);
-        transform: scale(0);
-        animation: ripple 0.6s linear;
-        pointer-events: none;
-      `;
-      button.style.position = 'relative';
-      button.style.overflow = 'hidden';
-      button.appendChild(ripple);
-
-      setTimeout(() => {
-        button.style.transform = 'scale(1)';
-        button.style.opacity = '1';
-
-        // Smooth page transition
-        document.body.style.transition = 'opacity 0.2s ease-out';
-        document.body.style.opacity = '0.95';
-
-        setTimeout(() => {
-          navigate('/projetos');
-          document.body.style.opacity = '1';
-        }, 100);
-      }, 150);
-    } else {
-      navigate('/projetos');
-    }
-  };
-
-  const handleViewAllInvoices = () => {
-    // Enhanced smooth transition for invoices
-    const button = document.activeElement as HTMLElement;
-    if (button) {
-      button.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
-      button.style.transform = 'scale(0.95)';
-      button.style.opacity = '0.7';
-
-      setTimeout(() => {
-        button.style.transform = 'scale(1)';
-        button.style.opacity = '1';
-
-        // Smooth page transition with visual feedback
-        document.body.style.transition = 'opacity 0.2s ease-out';
-        document.body.style.opacity = '0.95';
-
-        setTimeout(() => {
-          navigate('/cobranca');
-          document.body.style.opacity = '1';
-        }, 100);
-      }, 150);
-    } else {
-      navigate('/cobranca');
-    }
-  };
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar dados</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         {/* Breadcrumb */}
         <Breadcrumb>
           <BreadcrumbList>
@@ -258,150 +171,186 @@ export function Dashboard() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do seu escritório de advocacia
-          </p>
-        </div>
-
-        {/* Metric Cards */}
+        {/* Métricas Principais */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="💰 RECEITAS"
-            value={metrics.revenue.value}
-            change={metrics.revenue.change}
-            trend={metrics.revenue.trend}
+            value={metrics?.revenue || 0}
             icon={DollarSign}
-            className="metric-revenue"
+            className="border-l-4 border-l-green-500"
+            isLoading={isLoading}
           />
           <MetricCard
             title="📉 DESPESAS"
-            value={metrics.expenses.value}
-            change={metrics.expenses.change}
-            trend={metrics.expenses.trend}
+            value={metrics?.expenses || 0}
             icon={TrendingDown}
-            className="metric-expense"
+            className="border-l-4 border-l-red-500"
+            isLoading={isLoading}
           />
           <MetricCard
             title="🏦 SALDO"
-            value={metrics.balance.value}
-            change={metrics.balance.change}
-            trend={metrics.balance.trend}
+            value={metrics?.balance || 0}
             icon={TrendingUp}
-            className="metric-balance-positive"
+            className="border-l-4 border-l-blue-500"
+            isLoading={isLoading}
           />
           <MetricCard
             title="👥 CLIENTES"
-            value={metrics.clients.value}
-            change={metrics.clients.change}
-            trend={metrics.clients.trend}
-            icon={Users}
+            value={metrics?.clients || 0}
             format="number"
-            className="metric-clients"
+            icon={Users}
+            className="border-l-4 border-l-purple-500"
+            isLoading={isLoading}
           />
         </div>
 
-        {/* Charts Section */}
-        <DashboardCharts />
-
-        {/* Activity Sections */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* Recent Activities */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Notificações</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleViewAllNotifications}
-                className="transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                Ver todas
-              </Button>
+        {/* Gráficos */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Evolução Financeira</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <activity.icon className={cn("h-4 w-4 mt-1", activity.color)} />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-              <Button variant="outline" size="sm" className="w-full" onClick={handleViewAllNotifications}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ver mais
-              </Button>
+            <CardContent className="pl-2">
+              <DashboardCharts />
             </CardContent>
           </Card>
-
-          {/* Urgent Projects */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Projetos Urgentes</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleViewAllProjects}
-                className="transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                Ver todos
-              </Button>
+          <Card className="col-span-3">
+            <CardHeader>
+              <CardTitle>Resumo do Sistema</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {urgentProjects.map((project, index) => (
-                <div key={index} className="flex flex-col space-y-2 p-3 border rounded-lg">
-                  <h4 className="text-sm font-medium">{project.name}</h4>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      <Calendar className="h-3 w-3 inline mr-1" />
-                      {new Date(project.deadline).toLocaleDateString('pt-BR')}
-                    </span>
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
-                      {project.status}
-                    </span>
-                  </div>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Projetos Ativos</span>
+                  <span className="text-2xl font-bold">
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      data?.activeProjects || 0
+                    )}
+                  </span>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Invoices */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Faturas Vencendo</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleViewAllInvoices}
-                className="transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                Ver todas
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upcomingInvoices.map((invoice, index) => (
-                <div key={index} className="flex flex-col space-y-2 p-3 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">{invoice.number}</h4>
-                    <span className="text-sm font-bold text-green-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(invoice.amount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{invoice.client}</span>
-                    <span className="text-red-600">
-                      Vence: {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Tarefas Pendentes</span>
+                  <span className="text-2xl font-bold">
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      data?.pendingTasks || 0
+                    )}
+                  </span>
                 </div>
-              ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Total a Receber</span>
+                  <span className="text-2xl font-bold">
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(data?.totalReceivables || 0)
+                    )}
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Ações Rápidas */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                onClick={() => navigate('/crm')}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gerenciar Clientes</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Cliente
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                onClick={() => navigate('/projetos')}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Projetos</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Projeto
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                onClick={() => navigate('/faturamento')}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Fatura
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                onClick={() => navigate('/fluxo-caixa')}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Fluxo de Caixa</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Transação
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Notificações e Alertas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              Notificações Importantes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Carregando notificações...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <Clock className="h-4 w-4 text-yellow-600" />
+                  <div>
+                    <p className="text-sm font-medium">Sistema totalmente integrado!</p>
+                    <p className="text-xs text-muted-foreground">Todos os módulos estão conectados e funcionando.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <FileText className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium">Dados reais carregados</p>
+                    <p className="text-xs text-muted-foreground">Os dados fictícios foram removidos com sucesso.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

@@ -8,6 +8,7 @@ import { config } from 'dotenv';
 import { authRoutes } from './routes/auth.routes';
 import { adminRoutes } from './routes/admin.routes';
 import { tenantRoutes } from './routes/tenant.routes';
+import { uploadRoutes } from './routes/upload.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { tenantMiddleware } from './middleware/tenant';
@@ -42,6 +43,7 @@ app.use('/api', tenantMiddleware);
 
 // Rotas protegidas por tenant
 app.use('/api/tenant', tenantRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Middleware de tratamento de erros
 app.use(errorHandler);

@@ -59,6 +59,7 @@ import { cn } from "@/lib/utils";
 import { UserProfileDialog } from "./UserProfileDialog";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { useDialogBodyFix } from "@/hooks/use-dialog-body-fix";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -106,12 +107,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    // Add logout logic here
-    console.log("User logged out");
-    // For demo purposes, just show an alert
-    alert("Logout realizado com sucesso!");
-    // In a real app, you would clear auth tokens and redirect to login
+    logout();
   };
 
   const handleViewProfile = () => {

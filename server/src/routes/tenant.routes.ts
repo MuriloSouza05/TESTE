@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AppError, asyncHandler, createAuditLog } from '../utils/AppError';
 import { checkPermission } from '../middleware/auth';
+import { checkPlanAccess, checkPlanLimits, checkPlanFeature } from '../middleware/planAccess';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -28,7 +29,7 @@ const createClientSchema = z.object({
   }).optional()
 });
 
-router.post('/clients', asyncHandler(async (req, res) => {
+router.post('/clients', checkPlanAccess('clients'), checkPlanLimits('clients'), asyncHandler(async (req, res) => {
   const data = createClientSchema.parse(req.body);
   const { user } = req;
 
@@ -62,7 +63,7 @@ const createProjectSchema = z.object({
   userId: z.string().uuid('ID do usuário inválido')
 });
 
-router.post('/projects', asyncHandler(async (req, res) => {
+router.post('/projects', checkPlanAccess('projects'), checkPlanLimits('projects'), asyncHandler(async (req, res) => {
   const data = createProjectSchema.parse(req.body);
   const { user } = req;
 
@@ -99,7 +100,7 @@ const createTaskSchema = z.object({
   dueDate: z.string().datetime().optional()
 });
 
-router.post('/tasks', asyncHandler(async (req, res) => {
+router.post('/tasks', checkPlanAccess('tasks'), asyncHandler(async (req, res) => {
   const data = createTaskSchema.parse(req.body);
   const { user } = req;
 
@@ -134,7 +135,7 @@ const createInvoiceSchema = z.object({
   description: z.string().optional()
 });
 
-router.post('/invoices', checkPermission(['COMPOSITE', 'MANAGERIAL']), asyncHandler(async (req, res) => {
+router.post('/invoices', checkPlanAccess('billing'), checkPermission(['COMPOSITE', 'MANAGERIAL']), asyncHandler(async (req, res) => {
   const data = createInvoiceSchema.parse(req.body);
   const { user } = req;
 
@@ -169,7 +170,7 @@ const createTransactionSchema = z.object({
   isRecurring: z.boolean().default(false)
 });
 
-router.post('/transactions', checkPermission(['COMPOSITE', 'MANAGERIAL']), asyncHandler(async (req, res) => {
+router.post('/transactions', checkPlanAccess('cash_flow'), checkPermission(['COMPOSITE', 'MANAGERIAL']), asyncHandler(async (req, res) => {
   const data = createTransactionSchema.parse(req.body);
   const { user } = req;
 
@@ -233,6 +234,74 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
     totalReceivables,
     monthlyBalance
   });
+}));
+
+// Rotas GET para buscar dados
+router.get('/clients', asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  const clients = await prisma.client.findMany({
+    where: { tenantId: user!.tenantId },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  res.json(clients);
+}));
+
+router.get('/projects', asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  const projects = await prisma.project.findMany({
+    where: { tenantId: user!.tenantId },
+    include: {
+      client: { select: { name: true } },
+      assignedTo: { select: { email: true } }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  res.json(projects);
+}));
+
+router.get('/tasks', asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  const tasks = await prisma.task.findMany({
+    where: { tenantId: user!.tenantId },
+    include: {
+      project: { select: { title: true } },
+      assignedTo: { select: { email: true } }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  res.json(tasks);
+}));
+
+router.get('/invoices', asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  const invoices = await prisma.invoice.findMany({
+    where: { tenantId: user!.tenantId },
+    include: {
+      client: { select: { name: true } },
+      project: { select: { title: true } }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  res.json(invoices);
+}));
+
+router.get('/transactions', asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  const transactions = await prisma.transaction.findMany({
+    where: { tenantId: user!.tenantId },
+    orderBy: { date: 'desc' }
+  });
+  
+  res.json(transactions);
 }));
 
 export { router as tenantRoutes };

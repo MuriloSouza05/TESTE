@@ -1,10 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
-import { Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { ZodError } from 'zod';
 
+interface PrismaError extends Error {
+  code?: string;
+  meta?: {
+    target?: string[];
+  };
+}
+
 export const errorHandler = (
-  error: Error,
+  error: Error | PrismaError,
   req: Request,
   res: Response,
   next: NextFunction
@@ -18,7 +25,7 @@ export const errorHandler = (
   }
 
   // Erros de validação do Prisma
-  if (error instanceof Prisma.PrismaClientValidationError) {
+  if (error instanceof Error && error.name === 'PrismaClientValidationError') {
     return res.status(400).json({
       status: 'error',
       message: 'Erro de validação nos dados',
@@ -27,12 +34,13 @@ export const errorHandler = (
   }
 
   // Erros únicos do Prisma (ex: violação de unique constraint)
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === 'P2002') {
+  if (error instanceof Error && error.name === 'PrismaClientKnownRequestError') {
+    const prismaError = error as PrismaError;
+    if (prismaError.code === 'P2002') {
       return res.status(409).json({
         status: 'error',
         message: 'Registro duplicado encontrado',
-        field: error.meta?.target
+        field: prismaError.meta?.target
       });
     }
   }

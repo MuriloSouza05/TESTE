@@ -1,8 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 
 const prisma = new PrismaClient();
+
+type PrismaMiddlewareParams = {
+  model?: string;
+  action: 'findUnique' | 'findFirst' | 'findMany' | 'create' | 'createMany' | 'update' | 'updateMany' | 'delete' | 'deleteMany';
+  args: any;
+  dataPath: string[];
+  runInTransaction: boolean;
+};
 
 export const tenantMiddleware = async (
   req: Request,
@@ -35,7 +43,7 @@ export const tenantMiddleware = async (
     const tenantId = req.user.tenantId;
     
     // Middleware que adiciona automaticamente o tenantId em todas as operações
-    prisma.$use(async (params, next) => {
+    prisma.$use(async (params: PrismaMiddlewareParams, next) => {
       // Lista de modelos que devem ter o tenant ID
       const tenantModels = [
         'User',
@@ -47,7 +55,7 @@ export const tenantMiddleware = async (
         'AuditLog'
       ];
 
-      if (tenantModels.includes(params.model)) {
+      if (params.model && tenantModels.includes(params.model)) {
         if (params.action === 'findUnique' || params.action === 'findFirst') {
           // Adiciona tenantId na condição where
           params.args.where['tenantId'] = tenantId;
